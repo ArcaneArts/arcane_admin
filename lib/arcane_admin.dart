@@ -29,7 +29,7 @@ class ArcaneAdmin {
   /// If the projectId is not defined it will be used from the environment.
   /// The projectId defaults to $projectId.firebasestorage.app, though if you
   /// have the appspot domain actually define your bucket
-  Future<void> initialize({
+  static Future<void> initialize({
     String? defaultStorageBucket,
     String database = "(default)",
     String? apiKey,
@@ -69,7 +69,7 @@ class ArcaneAdmin {
     ArcaneAdmin.projectId = projectId!;
   }
 
-  Future<http.Client> googleClient({
+  static Future<http.Client> googleClient({
     List<String> scopes = const [],
     String? apiKey,
     ServiceAccountCredentials? credentials,
