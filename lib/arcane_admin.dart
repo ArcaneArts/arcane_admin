@@ -1,7 +1,11 @@
 library arcane_admin;
 
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:arcane_admin/messaging.dart';
 import 'package:arcane_admin/tasks.dart';
+import 'package:fast_log/fast_log.dart';
 import 'package:fire_api/fire_api.dart';
 import 'package:fire_api_dart/fire_api_dart.dart';
 import 'package:google_cloud/google_cloud.dart';
@@ -12,6 +16,7 @@ import 'package:googleapis/identitytoolkit/v1.dart' as idtk;
 import 'package:googleapis/storage/v1.dart' as s;
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
+import 'package:precision_stopwatch/precision_stopwatch.dart';
 
 export 'package:fire_api/fire_api.dart';
 
@@ -24,7 +29,10 @@ class ArcaneAdmin {
   static late final $Messaging messaging;
   static late final $CloudTasks tasks;
   static late final String defaultStorageBucket;
+  static late final AGClient agclient;
 
+  static String? get serviceAccountEmail => agclient.serviceAccountEmail;
+  static http.Client get client => agclient.client;
   static FireStorageRef bucket([String? b]) =>
       storage.bucket(b ?? defaultStorageBucket);
   static FireStorageRef ref(String path, {String? bucket}) =>
@@ -44,43 +52,31 @@ class ArcaneAdmin {
     String? apiKey,
     ServiceAccountCredentials? credentials,
     String? projectId,
+    String cloudTasksRegion = "us-central1",
     String firestoreBasePath = "",
     String firestoreBaseUrl = "https://firestore.googleapis.com/",
   }) async {
-    late http.Client storageClient;
-    late http.Client firestoreClient;
-    late http.Client messagingClient;
-    late http.Client cloudTasksClient;
+    PrecisionStopwatch p = PrecisionStopwatch();
     await Future.wait([
       if (projectId == null) computeProjectId().then((i) => projectId = i),
-      googleClient(
+      GoogleClientFactory.googleClient(
         apiKey: apiKey,
         credentials: credentials,
-        scopes: [s.StorageApi.devstorageReadWriteScope],
-      ).then((i) => storageClient = i),
-      googleClient(
-        apiKey: apiKey,
-        credentials: credentials,
-        scopes: [FirestoreApi.datastoreScope],
-      ).then((i) => firestoreClient = i),
-      googleClient(
-        apiKey: apiKey,
-        credentials: credentials,
-        scopes: [idtk.IdentityToolkitApi.firebaseScope],
-      ).then((i) => messagingClient = i),
-      googleClient(
-        apiKey: apiKey,
-        credentials: credentials,
-        scopes: [CloudTasksApi.cloudPlatformScope],
-      ).then((i) => cloudTasksClient = i),
+        scopes: [
+          CloudTasksApi.cloudPlatformScope,
+          idtk.IdentityToolkitApi.firebaseScope,
+          FirestoreApi.datastoreScope,
+          s.StorageApi.devstorageReadWriteScope,
+        ],
+      ).then((i) => agclient = i),
     ]);
 
-    messaging = $Messaging(FirebaseCloudMessagingApi(messagingClient));
-    tasks = $CloudTasks(CloudTasksApi(cloudTasksClient));
-    storage = GoogleCloudFireStorage(s.StorageApi(storageClient));
+    messaging = $Messaging(FirebaseCloudMessagingApi(client));
+    tasks = $CloudTasks(CloudTasksApi(client), region: cloudTasksRegion);
+    storage = GoogleCloudFireStorage(s.StorageApi(client));
     firestore = GoogleCloudFirestoreDatabase(
       FirestoreApi(
-        firestoreClient,
+        client,
         rootUrl: firestoreBaseUrl,
         servicePath: firestoreBasePath,
       ),
@@ -90,16 +86,106 @@ class ArcaneAdmin {
     ArcaneAdmin.defaultStorageBucket =
         defaultStorageBucket ?? "$projectId.firebasestorage.app";
     ArcaneAdmin.projectId = projectId!;
+    info("Initialized Arcane Admin in ${p.getMilliseconds().ceil()}ms");
+    if (serviceAccountEmail != null) {
+      info("Service Account: $serviceAccountEmail");
+    } else {
+      warn(
+        "Service Account not found! This will still work however we cannot validate JWT requests from cloud tasks!",
+      );
+    }
   }
+}
 
-  static Future<http.Client> googleClient({
+class AGClient {
+  final http.Client client;
+  final String? serviceAccountEmail;
+
+  AGClient(this.client, this.serviceAccountEmail);
+}
+
+class GoogleClientFactory {
+  static Future<AGClient> googleClient({
     List<String> scopes = const [],
     String? apiKey,
     ServiceAccountCredentials? credentials,
-  }) async =>
-      apiKey != null
-          ? clientViaApiKey(apiKey)
-          : credentials != null
-          ? await clientViaServiceAccount(credentials, scopes)
-          : await clientViaApplicationDefaultCredentials(scopes: scopes);
+  }) async {
+    if (apiKey != null) {
+      http.Client c = clientViaApiKey(apiKey);
+      return AGClient(c, null);
+    } else if (credentials != null) {
+      http.Client c = await clientViaServiceAccount(credentials, scopes);
+      return AGClient(c, credentials.email);
+    } else {
+      http.Client c = await clientViaApplicationDefaultCredentials(
+        scopes: scopes,
+      );
+      String? email = await findServiceAccountEmailFromADC();
+      return AGClient(c, email);
+    }
+  }
+
+  static Future<String?> tryParseServiceAccountEmail(File file) async {
+    if (!await file.exists()) {
+      return null;
+    }
+
+    try {
+      String content = await file.readAsString();
+      Map<String, dynamic> map = jsonDecode(content);
+
+      if (map['type'] == 'service_account' && map['client_email'] is String) {
+        return map['client_email'] as String;
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  static Future<String?> tryFetchEmailFromMetadata() async {
+    const String metadataUrl =
+        'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email';
+    try {
+      http.Response response = await http.get(
+        Uri.parse(metadataUrl),
+        headers: {'Metadata-Flavor': 'Google'},
+      );
+      if (response.statusCode == 200) {
+        return response.body.trim();
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  static Future<String?> findServiceAccountEmailFromADC() async {
+    String? credsEnv = Platform.environment['GOOGLE_APPLICATION_CREDENTIALS'];
+    if (credsEnv != null && credsEnv.isNotEmpty) {
+      String? s = await tryParseServiceAccountEmail(File(credsEnv));
+      if (s != null) return s;
+    }
+
+    File credFile;
+    if (Platform.isWindows) {
+      String? appData = Platform.environment['APPDATA'];
+      if (appData == null || appData.isEmpty) return null;
+      credFile = File.fromUri(
+        Uri.directory(
+          appData,
+        ).resolve('gcloud/application_default_credentials.json'),
+      );
+    } else {
+      String? home = Platform.environment['HOME'];
+      if (home == null || home.isEmpty) return null;
+      credFile = File.fromUri(
+        Uri.directory(
+          home,
+        ).resolve('.config/gcloud/application_default_credentials.json'),
+      );
+    }
+
+    String? email = await tryParseServiceAccountEmail(credFile);
+    if (email != null) return email;
+    return tryFetchEmailFromMetadata();
+  }
 }

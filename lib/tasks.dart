@@ -24,6 +24,10 @@ class $CloudTasks {
                     ? DateTime.timestamp().toIso8601String()
                     : scheduleTime.toUtc().toIso8601String(),
             httpRequest: tasks.HttpRequest(
+              oidcToken: tasks.OidcToken(
+                audience: url,
+                serviceAccountEmail: ArcaneAdmin.serviceAccountEmail,
+              ),
               httpMethod: 'POST',
               url: url,
               body: base64Encode(utf8.encode(jsonEncode({...body}))),

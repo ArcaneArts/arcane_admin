@@ -1,3 +1,8 @@
+# 1.4.0
+* Fix cloud tasks Region issue
+* Service account capturing & log updates
+* Cloud tasks support OIDC authentication tokens generating
+
 # 1.3.0
 * Cloud Tasks
 
