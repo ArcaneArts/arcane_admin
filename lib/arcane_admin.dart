@@ -73,6 +73,19 @@ class ArcaneAdmin {
       ).then((i) => agclient = i),
     ]);
 
+    ArcaneAdmin.defaultStorageBucket =
+        defaultStorageBucket ?? "$projectId.firebasestorage.app";
+    ArcaneAdmin.projectId = projectId!;
+    info("Initialized Arcane Admin in ${p.getMilliseconds().ceil()}ms");
+    if (serviceAccountEmail != null) {
+      info("Service Account: $serviceAccountEmail");
+    } else {
+      warn(
+        "Service Account not found! This will still work however we cannot validate JWT requests from cloud tasks!",
+      );
+    }
+
+    validation = $AAValidation();
     messaging = $AAMessaging(FirebaseCloudMessagingApi(client));
     tasks = $AACloudTasks(CloudTasksApi(client), region: cloudTasksRegion);
     storage = GoogleCloudFireStorage(s.StorageApi(client));
@@ -85,17 +98,6 @@ class ArcaneAdmin {
       projectId!,
       database: database,
     );
-    ArcaneAdmin.defaultStorageBucket =
-        defaultStorageBucket ?? "$projectId.firebasestorage.app";
-    ArcaneAdmin.projectId = projectId!;
-    info("Initialized Arcane Admin in ${p.getMilliseconds().ceil()}ms");
-    if (serviceAccountEmail != null) {
-      info("Service Account: $serviceAccountEmail");
-    } else {
-      warn(
-        "Service Account not found! This will still work however we cannot validate JWT requests from cloud tasks!",
-      );
-    }
   }
 }
 

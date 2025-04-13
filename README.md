@@ -117,10 +117,14 @@ ArcaneAdmin.messaging
 You can schedule a task in cloud tasks to any endpoint
 
 ```dart
-ArcaneAdmin.tasks.scheduleTask(queue: "barbequeue", url: "https://api.server.com/some/endpoint", body: {
-  "do": "something",
-  "data": true
-});
+ArcaneAdmin.tasks.scheduleTask(
+  queue: "barbequeue", 
+  url: "https://api.server.com/some/endpoint", 
+  body: {
+    "do": "something",
+    "data": true
+  }
+);
 ```
 
 Then, when it hits your server, you can validate the JWT provided to prove it came from GCM

@@ -1,6 +1,6 @@
 name: arcane_admin
 description: "Firebase Admin support for Arcane Servers"
-version: 1.5.1
+version: 1.5.3
 repository: https://github.com/ArcaneArts/arcane_admin
 environment:
   sdk: ^3.7.0
