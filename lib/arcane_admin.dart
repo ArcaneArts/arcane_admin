@@ -1,9 +1,11 @@
 library arcane_admin;
 
 import 'package:arcane_admin/messaging.dart';
+import 'package:arcane_admin/tasks.dart';
 import 'package:fire_api/fire_api.dart';
 import 'package:fire_api_dart/fire_api_dart.dart';
 import 'package:google_cloud/google_cloud.dart';
+import 'package:googleapis/cloudtasks/v2.dart';
 import 'package:googleapis/fcm/v1.dart';
 import 'package:googleapis/firestore/v1.dart';
 import 'package:googleapis/identitytoolkit/v1.dart' as idtk;
@@ -14,10 +16,13 @@ import 'package:http/http.dart' as http;
 export 'package:fire_api/fire_api.dart';
 
 class ArcaneAdmin {
+  ArcaneAdmin._();
+
   static late final String projectId;
   static late final FireStorage storage;
   static late final FirestoreDatabase firestore;
-  static late final ArcaneAdminMessaging messaging;
+  static late final $Messaging messaging;
+  static late final $CloudTasks tasks;
   static late final String defaultStorageBucket;
 
   static FireStorageRef bucket([String? b]) =>
@@ -45,6 +50,7 @@ class ArcaneAdmin {
     late http.Client storageClient;
     late http.Client firestoreClient;
     late http.Client messagingClient;
+    late http.Client cloudTasksClient;
     await Future.wait([
       if (projectId == null) computeProjectId().then((i) => projectId = i),
       googleClient(
@@ -62,11 +68,15 @@ class ArcaneAdmin {
         credentials: credentials,
         scopes: [idtk.IdentityToolkitApi.firebaseScope],
       ).then((i) => messagingClient = i),
+      googleClient(
+        apiKey: apiKey,
+        credentials: credentials,
+        scopes: [CloudTasksApi.cloudPlatformScope],
+      ).then((i) => cloudTasksClient = i),
     ]);
 
-    messaging = ArcaneAdminMessaging(
-      FirebaseCloudMessagingApi(messagingClient),
-    );
+    messaging = $Messaging(FirebaseCloudMessagingApi(messagingClient));
+    tasks = $CloudTasks(CloudTasksApi(cloudTasksClient));
     storage = GoogleCloudFireStorage(s.StorageApi(storageClient));
     firestore = GoogleCloudFirestoreDatabase(
       FirestoreApi(

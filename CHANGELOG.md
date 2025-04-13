@@ -1,3 +1,6 @@
+# 1.3.0
+* Cloud Tasks
+
 # 1.2.0
 * Firebase Messaging Support
 
