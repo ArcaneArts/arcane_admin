@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:arcane_admin/messaging.dart';
 import 'package:arcane_admin/tasks.dart';
+import 'package:arcane_admin/validation.dart';
 import 'package:fast_log/fast_log.dart';
 import 'package:fire_api/fire_api.dart';
 import 'package:fire_api_dart/fire_api_dart.dart';
@@ -26,8 +27,9 @@ class ArcaneAdmin {
   static late final String projectId;
   static late final FireStorage storage;
   static late final FirestoreDatabase firestore;
-  static late final $Messaging messaging;
-  static late final $CloudTasks tasks;
+  static late final $AAMessaging messaging;
+  static late final $AAValidation validation;
+  static late final $AACloudTasks tasks;
   static late final String defaultStorageBucket;
   static late final AGClient agclient;
 
@@ -71,8 +73,8 @@ class ArcaneAdmin {
       ).then((i) => agclient = i),
     ]);
 
-    messaging = $Messaging(FirebaseCloudMessagingApi(client));
-    tasks = $CloudTasks(CloudTasksApi(client), region: cloudTasksRegion);
+    messaging = $AAMessaging(FirebaseCloudMessagingApi(client));
+    tasks = $AACloudTasks(CloudTasksApi(client), region: cloudTasksRegion);
     storage = GoogleCloudFireStorage(s.StorageApi(client));
     firestore = GoogleCloudFirestoreDatabase(
       FirestoreApi(

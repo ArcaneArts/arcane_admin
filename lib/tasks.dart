@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'package:arcane_admin/arcane_admin.dart';
 import 'package:googleapis/cloudtasks/v2.dart' as tasks;
 
-class $CloudTasks {
+class $AACloudTasks {
   final String region;
   final tasks.CloudTasksApi api;
 
-  $CloudTasks(this.api, {this.region = "us-central1"});
+  $AACloudTasks(this.api, {this.region = "us-central1"});
 
   /// Schedules a cloud task post request to hit the given url with the given body.
   Future<String?> scheduleTask({

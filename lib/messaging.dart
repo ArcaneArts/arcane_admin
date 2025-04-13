@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:arcane_admin/arcane_admin.dart';
 import 'package:googleapis/fcm/v1.dart' as fmc1;
 
-class $Messaging {
+class $AAMessaging {
   final fmc1.FirebaseCloudMessagingApi api;
 
-  $Messaging(this.api);
+  $AAMessaging(this.api);
 
   Future<void> send(FMessage message) => api.projects.messages.send(
     fmc1.SendMessageRequest(message: message.toModel(), validateOnly: false),

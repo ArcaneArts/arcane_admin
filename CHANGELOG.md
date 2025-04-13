@@ -1,3 +1,6 @@
+# 1.5.0 
+* JWT Validation from GCloud
+
 # 1.4.0
 * Fix cloud tasks Region issue
 * Service account capturing & log updates
