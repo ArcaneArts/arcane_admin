@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:arcane_admin/arcane_admin.dart';
 import 'package:eventarc/eventarc.dart';
 import 'package:eventarc/events/cloud/firestore/v1.dart';
@@ -9,6 +11,39 @@ typedef $AACloudDocumentEventHandler =
 extension XDocEventRequest on Request {
   Future<Response> documentEvent($AACloudDocumentEventHandler handler) =>
       ArcaneAdmin.events.onDocumentEvent(this, handler);
+
+  Future<Response> storageEvent(
+    Future<Response> Function(ArcaneStorageEvent event) handler,
+  ) => ArcaneAdmin.events.onStorageEvent(this, handler);
+}
+
+class ArcaneStorageEvent {
+  final String bucket;
+  final String path;
+  final String contentType;
+  final Map<String, dynamic> metadata;
+  final String contentDisposition;
+  final int? size;
+
+  const ArcaneStorageEvent({
+    required this.bucket,
+    required this.path,
+    required this.contentType,
+    required this.metadata,
+    required this.contentDisposition,
+    required this.size,
+  });
+
+  factory ArcaneStorageEvent.from(Map<String, dynamic> event) {
+    return ArcaneStorageEvent(
+      bucket: event['bucket'] as String,
+      path: event['name'] as String,
+      contentType: event['contentType'] as String,
+      metadata: event['metadata'] ?? {},
+      contentDisposition: event['contentDisposition'] as String,
+      size: event['size'] != null ? int.tryParse(event['size']) : null,
+    );
+  }
 }
 
 class ArcaneDocumentEvent {
@@ -34,6 +69,15 @@ class $AACloudEvents {
       DocumentEventData.fromBuffer(
         await request.read().expand((element) => element).toList(),
       );
+
+  Future<Response> onStorageEvent(
+    Request request,
+    Future<Response> Function(ArcaneStorageEvent event) handler,
+  ) async {
+    Map<String, dynamic> data = jsonDecode(await request.readAsString());
+    ArcaneStorageEvent event = ArcaneStorageEvent.from(data);
+    return handler(event);
+  }
 
   Future<Response> onDocumentEvent(
     Request request,

@@ -1,3 +1,6 @@
+# 1.5.7
+* Storage events
+
 # 1.5.6
 * Fixes
 
