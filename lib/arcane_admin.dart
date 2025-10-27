@@ -3,6 +3,7 @@ library arcane_admin;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:arcane_admin/events.dart';
 import 'package:arcane_admin/messaging.dart';
 import 'package:arcane_admin/tasks.dart';
 import 'package:arcane_admin/validation.dart';
@@ -30,6 +31,7 @@ class ArcaneAdmin {
   static late final $AAMessaging messaging;
   static late final $AAValidation validation;
   static late final $AACloudTasks tasks;
+  static late final $AACloudEvents events;
   static late final String defaultStorageBucket;
   static late final AGClient agclient;
 
@@ -86,6 +88,7 @@ class ArcaneAdmin {
     }
 
     validation = $AAValidation();
+    events = $AACloudEvents();
     messaging = $AAMessaging(FirebaseCloudMessagingApi(client));
     tasks = $AACloudTasks(CloudTasksApi(client), region: cloudTasksRegion);
     storage = GoogleCloudFireStorage(s.StorageApi(client));

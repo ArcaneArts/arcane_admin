@@ -1,3 +1,9 @@
+# 1.5.6
+* Fixes
+
+# 1.5.5
+* Document events api
+
 # 1.5.3
 * Fix
 
