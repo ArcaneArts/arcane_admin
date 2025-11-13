@@ -36,11 +36,15 @@ class ArcaneStorageEvent {
 
   factory ArcaneStorageEvent.from(Map<String, dynamic> event) {
     return ArcaneStorageEvent(
-      bucket: event['bucket'] as String,
-      path: event['name'] as String,
-      contentType: event['contentType'] as String,
+      bucket: event['bucket'] is String ? event['bucket'] as String : '',
+      path: event['name'] is String ? event['name'] as String : '',
+      contentType:
+          event['contentType'] is String ? event['contentType'] as String : '',
       metadata: event['metadata'] ?? {},
-      contentDisposition: event['contentDisposition'] as String,
+      contentDisposition:
+          event['contentDisposition'] is String
+              ? event['contentDisposition'] as String
+              : '',
       size: event['size'] != null ? int.tryParse(event['size']) : null,
     );
   }
