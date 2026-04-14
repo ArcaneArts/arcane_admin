@@ -1,3 +1,6 @@
+# 1.5.9
+* Added a task executor wrapper
+
 # 1.5.8
 * Storage Event fixes
 

@@ -20,6 +20,7 @@ import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 import 'package:precision_stopwatch/precision_stopwatch.dart';
 
+export 'package:arcane_admin/wrapper/executor.dart';
 export 'package:fire_api/fire_api.dart';
 
 class ArcaneAdmin {
