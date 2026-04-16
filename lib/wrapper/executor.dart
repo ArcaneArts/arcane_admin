@@ -88,6 +88,9 @@ class TaskManager {
           lastBackoffMS = (lastBackoffMS * 0.7).floor();
         }
 
+        success(
+          "Task ${task.taskId} handed off to continue working (exceeded ${executionBlockTime.inSeconds}s)",
+        );
         await schedule(
           task,
           lbms: lastBackoffMS,
